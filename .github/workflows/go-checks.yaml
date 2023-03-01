@@ -1,0 +1,89 @@
+# use like:
+
+# name: Go checks
+# on:
+#   push:
+# jobs:
+#   go-checks:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml
+
+
+name: Run go checks
+
+env:
+  GO_DEFAULT_VERSION: '1.20.1'
+  GOFUMPT_DEFAULT_VERSION: 'v1.15.2'
+
+on:
+  workflow_call:
+    inputs:
+      dir:
+        description: Directory to run checks in
+        type: string
+        required: false
+        default: "$PWD"
+      go_version:
+        description: Version of Go to use.
+        type: string
+        required: false
+        default: '1.20.1'
+      gofumpt_version:
+        description: 'Version of the plugin to cut a release for with *NO* "v", e.g., 1.2.3'
+        required: false
+        type: string
+        default: 'v0.3.1'
+      gofumpt_exclude_patterns:
+        description: List of grep patterns (comma-separated) to exclude for gofumpt check
+        required: false
+        type: string
+        default: "vendor,pb.go"
+
+jobs:
+  gomod:
+    name: Check that go.mod and go.sum are tidy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Setup Go
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        with:
+          go-version: ${{ inputs.go_version }}
+      - name: Check go.mod and go.sum tidiness
+        run: |
+          go mod tidy
+          if [ ! -z "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "Need to run 'go mod tidy'";
+            exit 1;
+          fi
+  gofumpt:
+    name: Check that code matches gofumpt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Setup Go
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # v3.4.0
+        with:
+          go-version: ${{ inputs.go_version }}
+      - name: Run gofumpt
+        run: |
+          echo "==> Install gofumpt ${{ inputs.gofumpt_version }}"
+          go install mvdan.cc/gofumpt@${{ inputs.gofumpt_version }}
+          echo "==> Checking that code complies with gofmt requirements..."
+
+          files=$(find . -name '*.go')
+          patterns='${{ inputs.gofumpt_exclude_patterns }}'
+          OLDIFS=$IFS
+          IFS=","
+          for pattern in $patterns; do
+            files=$(echo $files | grep -v $pattern);
+          done
+          IFS=$OLDIFS
+          gofmt_files=$(gofmt -l $files)
+          if [[ -n ${gofmt_files} ]]; then
+              echo 'gofmt needs running on the following files:'
+              echo "${gofmt_files}"
+              echo "You can use the command: \`gofumpt -w\` to reformat them."
+              exit 1
+          fi
