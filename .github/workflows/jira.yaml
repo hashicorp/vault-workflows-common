@@ -1,3 +1,25 @@
+# use like:
+
+# name: JIRA Sync
+# on:
+#   issues:
+#     types: [opened, closed, deleted, reopened]
+#   pull_request_target:
+#     types: [opened, closed, reopened]
+#   issue_comment: # Also triggers when commenting on a PR from the conversation view
+#     types: [created]
+# jobs:
+#   sync:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/jira.yaml
+#     # assuming you use Vault to get secrets
+#     # if you use GitHub secrets, use secrets.XYZ instead of steps.secrets.outputs.XYZ
+#     secrets:
+#       JIRA_SYNC_BASE_URL: ${{ steps.secrets.outputs.JIRA_SYNC_BASE_URL }}
+#       JIRA_SYNC_USER_EMAIL: ${{ steps.secrets.outputs.JIRA_SYNC_USER_EMAIL }}
+#       JIRA_SYNC_API_TOKEN: ${{ steps.secrets.outputs.JIRA_SYNC_API_TOKEN }}
+#     with:
+#       teams-array: '["ecosystem", "foundations"]'
+
 on:
   workflow_call:
     inputs:
@@ -13,7 +35,7 @@ on:
       JIRA_SYNC_API_TOKEN:
         required: true
 
-name: Jira Sync
+name: JIRA Sync
 
 jobs:
   sync:
