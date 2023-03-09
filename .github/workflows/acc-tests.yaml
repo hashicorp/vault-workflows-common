@@ -28,14 +28,13 @@ jobs:
           for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
               export $v
           done
-          make dev
           make setup-env
-          source ./bootstrap/terraform/local_environment_setup.sh
       - name: Set local Vault dev instance
         run: |
           for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
               export $v
           done
+          make dev
           export VAULT_ADDR=http://127.0.0.1:8200
           export VAULT_TOKEN=root
           git clone https://github.com/hashicorp/vault.git
@@ -49,6 +48,7 @@ jobs:
           for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
               export $v
           done
+          source ./bootstrap/terraform/local_environment_setup.sh
           make testacc
       - name: Clean test environment
         run: |
