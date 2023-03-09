@@ -27,6 +27,11 @@ on:
         required: true
         type: string
         description: 'JSON formatted array of teams to create issues with, e.g. ["ecosystem", "foundations"]. Must use double quotes for each element.'
+      ignore_dependabot:
+        required: false
+        type: boolean
+        default: true
+        description: 'Whether to create Jira tickers for pull-requests opened by dependabot or not'
     secrets:
       JIRA_SYNC_BASE_URL:
         required: true
@@ -57,8 +62,11 @@ jobs:
         else
           echo "type=ISS" >> $GITHUB_OUTPUT
         fi
+        if [[ "${{ github.triggering_actor }}" == "dependabot[bot]" ]] && [[ "${{ inputs.ignore_dependabot }}" == true ]]; then
+          export SHORT_CIRCUIT=true
+        fi
     - name: Create ticket
-      if: github.event.action == 'opened' || github.event.action == 'created'
+      if: env.SHORT_CIRCUIT != true && (github.event.action == 'opened' || github.event.action == 'created')
       uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # https://github.com/tomhjp/gh-action-jira-create@v0.2.1
       with:
         project: VAULT
@@ -69,26 +77,26 @@ jobs:
         # customfield_10091 is team custom field
         extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ inputs.teams-array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
     - name: Search
-      if: github.event.action != 'opened'
+      if: env.SHORT_CIRCUIT != true && github.event.action != 'opened'
       id: search
       uses: tomhjp/gh-action-jira-search@04700b457f317c3e341ce90da5a3ff4ce058f2fa # https://github.com/tomhjp/gh-action-jira-search@v0.2.2
       with:
         # cf[10089] is Issue Link custom field
         jql: 'project = "VAULT" and cf[10089]="${{ github.event.issue.html_url || github.event.pull_request.html_url }}"'
     - name: Sync comment
-      if: github.event.action == 'created' && steps.search.outputs.issue
+      if: env.SHORT_CIRCUIT != true && github.event.action == 'created' && steps.search.outputs.issue
       uses: tomhjp/gh-action-jira-comment@6eb6b9ead70221916b6badd118c24535ed220bd9 # https://github.com/tomhjp/gh-action-jira-comment@v0.2.0
       with:
         issue: ${{ steps.search.outputs.issue }}
         comment: "${{ github.actor }} ${{ github.event.review.state || 'commented' }}:\n\n${{ github.event.comment.body || github.event.review.body }}\n\n${{ github.event.comment.html_url || github.event.review.html_url }}"
     - name: Close ticket
-      if: (github.event.action == 'closed' || github.event.action == 'deleted') && steps.search.outputs.issue
+      if: env.SHORT_CIRCUIT != true && (github.event.action == 'closed' || github.event.action == 'deleted') && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # https://github.com/atlassian/gajira-transition@v3.0.1
       with:
         issue: ${{ steps.search.outputs.issue }}
         transition: Closed
     - name: Reopen ticket
-      if: github.event.action == 'reopened' && steps.search.outputs.issue
+      if: env.SHORT_CIRCUIT != true && github.event.action == 'reopened' && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # https://github.com/atlassian/gajira-transition@v3.0.1
       with:
         issue: ${{ steps.search.outputs.issue }}

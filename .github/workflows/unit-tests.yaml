@@ -1,0 +1,24 @@
+# use like:
+
+# name: Run Unit Tests
+# on: push
+# jobs:
+#   run-unit-tests:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/unit-tests.yaml
+
+
+name: Run Unit Tests
+
+on:
+  workflow_call
+
+jobs:
+  run-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: './go.mod'
+          cache: true
+      - run: make test

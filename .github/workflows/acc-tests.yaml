@@ -1,0 +1,52 @@
+# use like:
+
+# name: Run Acceptance Tests
+# on: push
+# jobs:
+#   run-acceptance-tests:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/acc-tests.yaml
+#     secrets: inherit
+
+name: Run Acceptance Tests
+
+on:
+  workflow_call
+
+jobs:
+  run-acc-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: './go.mod'
+          cache: true
+      - name: Set test environment
+        run: |
+          for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
+              export $v
+          done
+          make dev
+          make setup-env
+          source ./bootstrap/terraform/local_environment_setup.sh
+      - name: Set local Vault dev instance
+        run: |
+          export VAULT_ADDR=http://127.0.0.1:8200
+          export VAULT_TOKEN=root
+          git clone https://github.com/hashicorp/vault.git
+          cd vault
+          make dev
+          bin/vault server -dev -dev-root-token-id=root -dev-plugin-dir=../bin 2>&1 > /dev/null &
+          cd ..
+          make configure
+      - name: Run acceptance tests
+        run: |
+          make testacc
+      - name: Clean test environment
+        run: |
+          for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
+              export $v
+          done
+          make teardown-env
