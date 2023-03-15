@@ -1,6 +1,17 @@
+# use like:
+
+# name: Run Tests
+# on:
+#   push:
+# jobs:
+#   run-tests:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/tests.yaml
+
+
 name: Tests
 
-on: [push, workflow_dispatch]
+on:
+  workflow_call: {}
 
 permissions:
   contents: read
