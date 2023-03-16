@@ -5,7 +5,7 @@
 #   push:
 # jobs:
 #   go-checks:
-#     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml
+#     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml@{ref}
 
 
 name: Run go checks
