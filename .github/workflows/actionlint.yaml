@@ -1,16 +1,19 @@
 # Use like:
 
 # name: Lint GitHub Actions Workflows
+# on:
+#   push:
+#     paths:
+#     - '.github/workflows/**'
 # jobs:
 #   actionlint:
 #     # using `main` as the ref will keep your workflow up-to-date
 #     uses: hashicorp/vault-workflows-common/.github/workflows/actionlint.yaml@main
 
 name: Lint GitHub Actions Workflows
+
 on:
-  push:
-    paths:
-    - '.github/workflows/**'
+  workflow_call: {}
 
 jobs:
   actionlint:
