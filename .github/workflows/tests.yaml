@@ -5,7 +5,7 @@
 #   push:
 # jobs:
 #   run-tests:
-#     uses: hashicorp/vault-workflows-common/.github/workflows/tests.yaml
+#     uses: hashicorp/vault-workflows-common/.github/workflows/tests.yaml@{ref}
 
 
 name: Tests
