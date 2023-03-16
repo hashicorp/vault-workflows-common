@@ -9,7 +9,8 @@
 # permissions: write-all
 # jobs:
 #   backport:
-#     uses: hashicorp/vault-workflows-common/.github/workflows/backport.yaml@{ref}
+#     # using `main` as the ref will keep your workflow up-to-date
+#     uses: hashicorp/vault-workflows-common/.github/workflows/backport.yaml@main
 
 name: Run backport assistant
 

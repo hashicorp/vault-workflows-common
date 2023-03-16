@@ -5,7 +5,8 @@
 #   push:
 # jobs:
 #   go-checks:
-#     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml@{ref}
+#     # using `main` as the ref will keep your workflow up-to-date
+#     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml@main
 
 
 name: Run go checks
