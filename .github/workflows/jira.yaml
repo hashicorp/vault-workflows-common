@@ -10,7 +10,7 @@
 #     types: [created]
 # jobs:
 #   sync:
-#     uses: hashicorp/vault-workflows-common/.github/workflows/jira.yaml
+#     uses: hashicorp/vault-workflows-common/.github/workflows/jira.yaml@{ref}
 #     # assuming you use Vault to get secrets
 #     # if you use GitHub secrets, use secrets.XYZ instead of steps.secrets.outputs.XYZ
 #     secrets:
