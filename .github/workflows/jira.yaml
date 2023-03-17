@@ -28,11 +28,6 @@ on:
         required: true
         type: string
         description: 'JSON formatted array of teams to create issues with, e.g. ["ecosystem", "foundations"]. Must use double quotes for each element.'
-      ignore_dependabot:
-        required: false
-        type: boolean
-        default: true
-        description: 'Whether to create Jira tickets for pull-requests opened by dependabot or not'
     secrets:
       JIRA_SYNC_BASE_URL:
         required: true
@@ -62,9 +57,6 @@ jobs:
           echo "type=PR" >> $GITHUB_OUTPUT
         else
           echo "type=ISS" >> $GITHUB_OUTPUT
-        fi
-        if [[ "${{ github.triggering_actor }}" == "dependabot[bot]" ]] && [[ "${{ inputs.ignore_dependabot }}" == true ]]; then
-          echo "short_circuit=true" >> $GITHUB_OUTPUT
         fi
     - name: Create ticket
       if: steps.preprocess.outputs.short_circuit != true && (github.event.action == 'opened' || github.event.action == 'created')
