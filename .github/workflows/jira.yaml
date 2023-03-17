@@ -59,7 +59,7 @@ jobs:
           echo "type=ISS" >> $GITHUB_OUTPUT
         fi
     - name: Create ticket
-      if: github.event.action == 'opened' || github.event.action == 'created'
+      if: !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies')) && (github.event.action == 'opened' || github.event.action == 'created')
       uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # https://github.com/tomhjp/gh-action-jira-create@v0.2.1
       with:
         project: VAULT
