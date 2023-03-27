@@ -11,7 +11,7 @@
 #     # using `main` as the ref will keep your workflow up-to-date
 #     uses: hashicorp/vault-workflows-common/.github/workflows/bulk-dependency-updates.yaml@main
 #     secrets:
-#       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       REPO_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #       VAULT_ECO_GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
 #     with:
 #       # either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations
@@ -27,7 +27,7 @@ on:
         type: string
         description: 'Team to review the resulting PR. Either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations.'
     secrets:
-      GITHUB_TOKEN:
+      REPO_GITHUB_TOKEN:
         required: true
       VAULT_ECO_GITHUB_TOKEN:
         required: true
@@ -48,7 +48,7 @@ jobs:
           cache: true
           # Use a separate token to automatically execute checks on the resulting PR
           # https://github.com/peter-evans/create-pull-request/blob/main/docs/concepts-guidelines.md#triggering-further-workflow-runs
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.REPO_GITHUB_TOKEN }}
 
       - name: Upgrade Go dependencies
         run: |
@@ -60,6 +60,7 @@ jobs:
         run:
           # This output boolean tells us if the dependencies have actually changed
           echo "count=$(git status --porcelain=v1 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
+
       - name: Commit & push changes
         # Only push if changes exist
         if: steps.changes.outputs.count > 0
@@ -69,6 +70,7 @@ jobs:
           git add .
           git commit -m "Automated dependency upgrades"
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
+
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
         env:
