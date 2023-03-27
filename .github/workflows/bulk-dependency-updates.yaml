@@ -29,7 +29,7 @@ on:
     secrets:
       REPO_GITHUB_TOKEN:
         required: true
-        description: 'The default GITHUB_TOKEN for you workflow.'
+        description: 'The default GITHUB_TOKEN for your workflow.'
       VAULT_ECO_GITHUB_TOKEN:
         required: true
         description: 'Should be different than the default GITHUB_TOKEN so that this workflow will trigger checks on the resulting PR.'
