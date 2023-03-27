@@ -29,8 +29,10 @@ on:
     secrets:
       REPO_GITHUB_TOKEN:
         required: true
+        description: 'The default GITHUB_TOKEN for you workflow.'
       VAULT_ECO_GITHUB_TOKEN:
         required: true
+        description: 'Should be different than the default GITHUB_TOKEN so that this workflow will trigger checks on the resulting PR.'
 
 jobs:
   upgrade:
@@ -47,8 +49,8 @@ jobs:
           go-version-file: .go-version
           cache: true
           # Use a separate token to automatically execute checks on the resulting PR
-          # https://github.com/peter-evans/create-pull-request/blob/main/docs/concepts-guidelines.md#triggering-further-workflow-runs
-          token: ${{ secrets.REPO_GITHUB_TOKEN }}
+          # https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow
+          token: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
 
       - name: Upgrade Go dependencies
         run: |
@@ -74,15 +76,18 @@ jobs:
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
         env:
-          GH_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_GITHUB_TOKEN }}
+          REVIEWER_TEAM: ${{ inputs.reviewer-team }}
         # Only open a PR if the branch is not attached to an existing one
         run: |
           PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
+          # currently unable to set team as reviewer in GHA
+          # see https://github.com/cli/cli/issues/6395
           reviewers=""
-          if [[ "${{ inputs.reviewer-team }}" == "hashicorp/vault-ecosystem-applications" ]]; then
+          if [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-applications" ]]; then
             reviewers="austingebauer,fairclothjm,vinay-gopalan,maxcoulombe,robmonte,Zlaticanin,kpcraig,raymonstah"
-          elif [[ "${{ inputs.reviewer-team }}" == "hashicorp/vault-ecosystem-foundations" ]]; then
+          elif [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-foundations" ]]; then
             reviewers="swenson,benashz,tvoran,tomhjp,kschoche,thyton"
           else
             echo "Unknown input for reviewer-team"
