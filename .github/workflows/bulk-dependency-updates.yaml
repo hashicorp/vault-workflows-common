@@ -25,7 +25,12 @@ on:
       reviewer-team:
         required: true
         type: string
-        description: 'Team to review the resulting PR. Either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations'
+        description: 'Team to review the resulting PR. Either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations.'
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      VAULT_ECO_GITHUB_TOKEN:
+        required: true
 
 jobs:
   upgrade:
