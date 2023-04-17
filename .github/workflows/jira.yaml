@@ -54,9 +54,9 @@ jobs:
       id: preprocess
       run: |
         if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
-          echo "type=PR" >> $GITHUB_OUTPUT
+          echo "type=PR" >> "$GITHUB_OUTPUT"
         else
-          echo "type=ISS" >> $GITHUB_OUTPUT
+          echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
         echo "==> Determining team labels"
@@ -64,11 +64,12 @@ jobs:
         for team in $(echo "${{ inputs.teams-array }}" | jq -r '.[]'); do
           if [[ "$team" == "applications" ]] || [[ "$team" == "foundations" ]]; then
             t="${team}-eco"
+            echo "==> Found deprecated team label \"$team\", overwriting with \"$t\""
             # append team label to array
             teams_field="$(echo "$teams_field" | jq --arg tt "$t" '. |= . + [$tt]')"
           else
-            echo "==> Error: unsupported teams-array input: ${{ inputs.teams-array }}"
-            exit 1
+            # let all other labels pass through
+            teams_field="${{ inputs.teams-array }}"
           fi
         done
 
