@@ -19,7 +19,7 @@
 #       JIRA_SYNC_USER_EMAIL: ${{ steps.secrets.outputs.JIRA_SYNC_USER_EMAIL }}
 #       JIRA_SYNC_API_TOKEN: ${{ steps.secrets.outputs.JIRA_SYNC_API_TOKEN }}
 #     with:
-#       teams-array: '["ecosystem", "foundations"]'
+#       teams-array: '["foundations-eco"]'
 
 on:
   workflow_call:
@@ -61,19 +61,23 @@ jobs:
 
         echo "==> Determining team labels"
         teams_field='[]'
-        for team in $(echo "${{ inputs.teams-array }}" | jq -r '.[]'); do
+        for team in $(echo '${{ inputs.teams-array }}' | jq -r '.[]'); do
           if [[ "$team" == "applications" ]] || [[ "$team" == "foundations" ]]; then
             t="${team}-eco"
             echo "==> Found deprecated team label \"$team\", overwriting with \"$t\""
             # append team label to array
-            teams_field="$(echo "$teams_field" | jq --arg tt "$t" '. |= . + [$tt]')"
-          else
-            # let all other labels pass through
-            teams_field="${{ inputs.teams-array }}"
+            teams_field="$(echo "$teams_field" | jq --compact-output --arg tt "$t" '. |= . + [$tt]')"
           fi
         done
 
-        echo "teams_array=$teams_field" >> "$GITHUB_OUTPUT"
+        if [[ $(echo "${teams_field}" | jq 'length') == 0 ]]; then
+          echo "==> No deprecated fields were overwritten, let labels passthrough"
+          teams_field='${{ inputs.teams-array }}'
+        fi
+
+        echo "==> Using labels: $teams_field"
+        echo "'teams_array="${teams_field}"'" >> "$GITHUB_OUTPUT"
+
     - name: Create ticket
       if: github.event.action == 'opened' && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
       uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # https://github.com/tomhjp/gh-action-jira-create@v0.2.1
