@@ -19,7 +19,7 @@
 #       JIRA_SYNC_USER_EMAIL: ${{ steps.secrets.outputs.JIRA_SYNC_USER_EMAIL }}
 #       JIRA_SYNC_API_TOKEN: ${{ steps.secrets.outputs.JIRA_SYNC_API_TOKEN }}
 #     with:
-#       teams-array: '["ecosystem", "foundations"]'
+#       teams-array: '["foundations-eco"]'
 
 on:
   workflow_call:
