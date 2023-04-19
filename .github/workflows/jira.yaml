@@ -77,6 +77,7 @@ jobs:
 
         echo "==> Using labels: $teams_field"
         echo "'teams_array="${teams_field}"'" >> "$GITHUB_OUTPUT"
+
     - name: Create ticket
       if: github.event.action == 'opened' && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
       uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # https://github.com/tomhjp/gh-action-jira-create@v0.2.1
