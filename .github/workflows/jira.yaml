@@ -76,7 +76,7 @@ jobs:
         fi
 
         echo "==> Using labels: $teams_field"
-        echo "'teams_array="${teams_field}"'" >> "$GITHUB_OUTPUT"
+        echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
 
     - name: Create ticket
       if: github.event.action == 'opened' && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
