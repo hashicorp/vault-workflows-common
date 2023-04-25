@@ -29,7 +29,7 @@ on:
         required: false
         default: '1.20.1'
       gofumpt_version:
-        description: 'Version of the plugin to cut a release for with *NO* "v", e.g., 1.2.3'
+        description: 'Version of gofumpt to use'
         required: false
         type: string
         default: 'v0.3.1'

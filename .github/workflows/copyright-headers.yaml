@@ -1,0 +1,22 @@
+# Use like:
+
+# name: Lint
+# on:
+#   push:
+# jobs:
+#   copyright:
+#     # using `main` as the ref will keep your workflow up-to-date
+#     uses: hashicorp/vault-workflows-common/.github/workflows/copyright-headers.yaml@main
+
+name: Check copyright headers
+
+on:
+  workflow_call: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+      - uses: hashicorp/setup-copywrite@867a1a2a064a0626db322392806428f7dc59cb3e # v1.1.2
+      - run: copywrite headers --plan
