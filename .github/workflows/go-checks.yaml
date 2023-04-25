@@ -11,10 +11,6 @@
 
 name: Run go checks
 
-env:
-  GO_DEFAULT_VERSION: '1.20.1'
-  GOFUMPT_DEFAULT_VERSION: 'v1.15.2'
-
 on:
   workflow_call:
     inputs:
@@ -23,16 +19,11 @@ on:
         type: string
         required: false
         default: "$PWD"
-      go_version:
-        description: Version of Go to use.
-        type: string
-        required: false
-        default: '1.20.1'
       gofumpt_version:
         description: 'Version of the plugin to cut a release for with *NO* "v", e.g., 1.2.3'
         required: false
         type: string
-        default: 'v0.3.1'
+        default: 'v0.5.0'
       gofumpt_exclude_patterns:
         description: List of grep patterns (comma-separated) to exclude for gofumpt check
         required: false
@@ -49,7 +40,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
-          go-version: ${{ inputs.go_version }}
+          go-version-file: .go-version
       - name: Check go.mod and go.sum tidiness
         run: |
           go mod tidy
@@ -66,7 +57,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # v4.0.0
         with:
-          go-version: ${{ inputs.go_version }}
+          go-version-file: .go-version
       - name: Run gofumpt
         run: |
           echo "==> Install gofumpt ${{ inputs.gofumpt_version }}"
