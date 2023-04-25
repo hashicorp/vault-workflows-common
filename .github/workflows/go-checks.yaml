@@ -20,7 +20,7 @@ on:
         required: false
         default: "$PWD"
       gofumpt_version:
-        description: 'Version of the plugin to cut a release for with *NO* "v", e.g., 1.2.3'
+        description: 'Version of gofumpt to use'
         required: false
         type: string
         default: 'v0.5.0'
