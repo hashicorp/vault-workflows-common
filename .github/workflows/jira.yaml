@@ -79,7 +79,7 @@ jobs:
         echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
 
     - name: Create ticket
-      if: github.event.action == 'opened' && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
+      if: github.event.action == 'opened' && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies')) && (github.actor != 'dependabot[bot]')
       uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # v0.2.1
       with:
         project: VAULT
