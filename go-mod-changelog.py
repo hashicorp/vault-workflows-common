@@ -5,7 +5,7 @@
 import subprocess
 
 output = subprocess.check_output(
-    r"""git diff -- go.mod | cat | grep -ve indirect | grep -P '^[-+]\t'""", shell=True
+    r"""git diff HEAD^ -- go.mod | cat | grep -ve indirect | grep -P '^[-+]\t'""", shell=True
 )
 
 minus = {}
