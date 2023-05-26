@@ -87,6 +87,13 @@ jobs:
             -f repo="${{ inputs.repository }}" \
             -f plugin_branch="$BRANCH_NAME"
 
+      - name: Get go-mod-changelog script
+        id: changelog
+        run: |
+          curl -o go-mod-changelog.py https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/go-mod-changelog.py
+          chmod +x go-mod-changelog.py
+          echo "changelog_blurb=$(./go-mod-changelog.py)" >> "$GITHUB_OUTPUT"
+
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
         env:
@@ -117,7 +124,7 @@ jobs:
             --label "dependencies" \
             --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
 
-            $(./go-mod-changelog.py)
+            ${{ steps.changelog.outputs.changelog_blurb }}
             "
           else
             echo "Pull request already exists, won't create a new one."
