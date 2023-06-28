@@ -47,7 +47,7 @@ jobs:
     env:
       # This branch will receive updates each time the workflow runs
       # It doesn't matter if it's deleted when merged, it'll be re-created
-      BRANCH_NAME: auto-dependency-upgrades
+      BRANCH_NAME: auto-dependency-upgrades-dispatch-variant
       GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
@@ -108,7 +108,7 @@ jobs:
           if [ -z "$PR" ]; then
             gh pr create \
             --head "$BRANCH_NAME" \
-            --title "Automated dependency upgrades" \
+            --title "Automated dependency upgrades - dispatch variant" \
             --reviewer "$reviewers" \
             --label "dependencies" \
             --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
