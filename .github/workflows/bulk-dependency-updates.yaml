@@ -122,7 +122,7 @@ jobs:
             --title "Automated dependency upgrades - dispatch variant" \
             --reviewer "$reviewers" \
             --label "dependencies" \
-            --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
+            --body "Full log: https://github.com/hashicorp/$REPO/actions/runs/$RUN_ID
 
             $(./go-mod-changelog.py)
             "
