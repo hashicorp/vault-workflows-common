@@ -47,7 +47,7 @@ jobs:
     env:
       # This branch will receive updates each time the workflow runs
       # It doesn't matter if it's deleted when merged, it'll be re-created
-      BRANCH_NAME: auto-dependency-upgrades-dispatch-variant
+      BRANCH_NAME: auto-dependency-upgrades
       GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
@@ -105,10 +105,9 @@ jobs:
 
           # currently unable to set team as reviewer in GHA
           # see https://github.com/cli/cli/issues/6395
-          # cut the reviewers for now for this test
           reviewers=""
           if [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-applications" ]]; then
-            reviewers="fairclothjm,kpcraig"
+            reviewers="austingebauer,fairclothjm,vinay-gopalan,maxcoulombe,robmonte,Zlaticanin,kpcraig,raymonstah"
           elif [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-foundations" ]]; then
             reviewers="swenson,benashz,tvoran,tomhjp,kschoche,thyton"
           else
@@ -119,10 +118,10 @@ jobs:
           if [ -z "$PR" ]; then
             gh pr create \
             --head "$BRANCH_NAME" \
-            --title "Automated dependency upgrades - dispatch variant" \
+            --title "Automated dependency upgrades" \
             --reviewer "$reviewers" \
             --label "dependencies" \
-            --body "Full log: https://github.com/hashicorp/$REPO/actions/runs/$RUN_ID
+            --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
 
             $(./go-mod-changelog.py)
             "
