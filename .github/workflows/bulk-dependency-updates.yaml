@@ -67,11 +67,10 @@ jobs:
       - name: Detect changes
         id: changes
         run:
-          # This output boolean tells us if the dependencies have actually changed
+          # This output tells us if the dependencies have actually changed
           echo "count=$(git status --porcelain=v1 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
 
       - name: Commit & push changes
-        id: git
         # Only push if changes exist
         if: steps.changes.outputs.count > 0
         run: |
@@ -79,7 +78,6 @@ jobs:
           git config user.email hc-github-team-secure-vault-ecosystem@users.noreply.github.com
           git add .
           git commit -m "Automated dependency upgrades"
-          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
 
       - name: Dispatch to vault
@@ -91,7 +89,7 @@ jobs:
           -H "Authorization: Bearer ${{secrets.VAULT_ECO_GITHUB_TOKEN}}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           https://api.github.com/repos/hashicorp/vault/actions/workflows/plugin-update-check.yml/dispatches \
-          -d '{"ref":"main","inputs":{"sha":"${{steps.git.outputs.sha}}","repo":"${{inputs.repository}}","plugin_branch":"'"${BRANCH_NAME}"'"}}'
+          -d '{"ref":"main","inputs":{"repo":"${{inputs.repository}}","plugin_branch":"'"${BRANCH_NAME}"'"}}'
 
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
