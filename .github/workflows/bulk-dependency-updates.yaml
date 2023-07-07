@@ -121,6 +121,5 @@ jobs:
             "
           else
             echo "Pull request already exists, won't create a new one."
-            exit 1
           fi
 
