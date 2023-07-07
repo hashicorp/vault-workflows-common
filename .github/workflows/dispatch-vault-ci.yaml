@@ -48,7 +48,7 @@ jobs:
         run: |
 
           gh workflow run --repo hashicorp/vault plugin-update-check.yml \
-            -f repo="${{ inputs.respository }}" \
+            -f repo="${{ inputs.repository }}" \
             -f plugin_branch="${{ inputs.branch }}"
 
 
