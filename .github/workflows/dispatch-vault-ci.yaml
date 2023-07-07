@@ -46,11 +46,6 @@ jobs:
     steps:
       - name: Dispatch Vault Plugin Update Check
         run: |
-
           gh workflow run --repo hashicorp/vault plugin-update-check.yml \
             -f repo="${{ inputs.repository }}" \
             -f plugin_branch="${{ inputs.branch }}"
-
-
-          # echo "{\"ref\": \"main\", \"inputs\": {\"repo\": \"${{inputs.repository}}\", \"plugin_branch\": \"${{inputs.branch}}\"}}" | \
-          #   gh workflow run --repo hashicorp/vault plugin-update-check.yml --json
