@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 
 # outputs a CHANGELOG blurb based on go.mod changes in the working dir
 
