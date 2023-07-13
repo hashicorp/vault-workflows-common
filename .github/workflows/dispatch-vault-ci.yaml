@@ -1,0 +1,51 @@
+# Use like:
+
+# name: Dispatch Vault CI On Branch
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         required: true
+#         type: string
+#         description: 'The git branch that we want Vault to fetch and run CI against.'
+#
+# jobs:
+#   dispatch:
+#     # using `main` as the ref will keep your workflow up-to-date
+#     uses: hashicorp/vault-workflows-common/.github/workflows/dispatch-vault-ci.yaml@main
+#     secrets:
+#       VAULT_ECO_GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
+#     with:
+#       repository: ${{ github.repository }}
+#       branch: $${ inputs.branch }}
+
+name: Dispatch Vault CI On Branch
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        required: true
+        type: string
+        description: 'The owner and repository name as per the github.repository context property.'
+      branch:
+        required: true
+        type: string
+        description: 'The name of the plugin branch'
+    secrets:
+      VAULT_ECO_GITHUB_TOKEN:
+        required: true
+        description: 'Should be different than the default GITHUB_TOKEN so that this workflow will trigger checks on the resulting PR.'
+
+jobs:
+  dispatch:
+    name: Dispatch Vault CI
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
+    steps:
+      - name: Dispatch Vault Plugin Update Check
+        run: |
+          gh workflow run --repo hashicorp/vault plugin-update-check.yml \
+            -f repo="${{ inputs.repository }}" \
+            -f plugin_branch="${{ inputs.branch }}"

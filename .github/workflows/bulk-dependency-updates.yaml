@@ -67,7 +67,7 @@ jobs:
       - name: Detect changes
         id: changes
         run:
-          # This output boolean tells us if the dependencies have actually changed
+          # This output tells us if the dependencies have actually changed
           echo "count=$(git status --porcelain=v1 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
 
       - name: Commit & push changes
@@ -79,6 +79,13 @@ jobs:
           git add .
           git commit -m "Automated dependency upgrades"
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
+
+      - name: Dispatch to vault
+        if: steps.changes.outputs.count > 0
+        run: |
+          gh workflow run --repo hashicorp/vault plugin-update-check.yml \
+            -f repo="${{ inputs.repository }}" \
+            -f plugin_branch="$BRANCH_NAME"
 
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
@@ -114,5 +121,5 @@ jobs:
             "
           else
             echo "Pull request already exists, won't create a new one."
-            exit 1
           fi
+
