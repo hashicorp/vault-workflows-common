@@ -45,8 +45,11 @@ jobs:
     steps:
     - name: '[DEBUG] Dump GitHub context'
       env:
+        GITHUB_EVENT_NAME: ${{ toJson(github.event_name) }}
         GITHUB_CONTEXT_EVENT: ${{ toJson(github.event) }}
-      run: echo "$GITHUB_CONTEXT_EVENT"
+      run: |
+        echo "$GITHUB_CONTEXT_EVENT"
+        echo "$GITHUB_EVENT_NAME"
     - name: Login
       uses: atlassian/gajira-login@45fd029b9f1d6d8926c6f04175aa80c0e42c9026 # v3.0.1
       env:
