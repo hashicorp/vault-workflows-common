@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Jira sync
     steps:
-    - name: [DEBUG] Dump GitHub context
+    - name: '[DEBUG] Dump GitHub context'
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
       run: echo "$GITHUB_CONTEXT"
