@@ -43,6 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Jira sync
     steps:
+    - name: [DEBUG] Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
     - name: Login
       uses: atlassian/gajira-login@45fd029b9f1d6d8926c6f04175aa80c0e42c9026 # v3.0.1
       env:
