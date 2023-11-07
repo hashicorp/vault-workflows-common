@@ -1,0 +1,69 @@
+# Flow based on proposal from: https://docs.google.com/document/d/1Gz0DohBnmH2WaqrQA3JCix_m6ISVyX56nYMDdT5worM/edit?usp=sharing
+
+# use like:
+
+# name: Run Acceptance Tests
+# on: push
+# jobs:
+#   run-acceptance-tests:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/acc-tests.yaml@main
+#     secrets: inherit
+
+name: Run Acceptance Tests
+
+on:
+  workflow_call
+
+jobs:
+  run-acc-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - "hashicorp/vault:1.13"
+          - "hashicorp/vault:1.14"
+          - "hashicorp/vault:1.15"
+          - "hashicorp/vault:latest"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: './go.mod'
+      - name: Build project
+        run: |
+          make dev
+      - name: Set up Vault server
+        run: |
+          docker run -d --rm --net=host \
+          -e VAULT_DEV_ROOT_TOKEN_ID=root \
+          -e VAULT_LOCAL_CONFIG='{"plugin_directory": "${{ github.workspace }}/bin"}' \
+          -v "${{ github.workspace }}/bin:${{ github.workspace }}/bin" \
+          ${{ matrix.image }} &
+      - name: Set up Vault CLI
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt install vault
+      - name: Set up test environment
+        run: |
+          for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
+              echo $v >> $GITHUB_ENV
+          done
+          make setup-env
+      - name: Configure Vault server
+        run: |
+          export VAULT_ADDR=http://127.0.0.1:8200
+          export VAULT_TOKEN=root
+          source ./bootstrap/terraform/local_environment_setup.sh
+          make configure PLUGIN_DIR="${{ github.workspace }}/bin"
+      - name: Run acceptance tests
+        run: |
+          source ./bootstrap/terraform/local_environment_setup.sh
+          make testacc
+      - name: Clean test environment
+        if: always()
+        run: |
+          make teardown-env
