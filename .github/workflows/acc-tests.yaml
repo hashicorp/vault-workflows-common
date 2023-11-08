@@ -53,7 +53,7 @@ jobs:
               echo $v >> $GITHUB_ENV
           done
           make setup-env
-      - name: Configure Vault server
+      - name: Configure project on Vault server
         run: |
           export VAULT_ADDR=http://127.0.0.1:8200
           export VAULT_TOKEN=root
