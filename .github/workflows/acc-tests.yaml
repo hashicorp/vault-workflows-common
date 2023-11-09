@@ -27,9 +27,9 @@ jobs:
           - "hashicorp/vault:latest"
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version-file: './go.mod'
       - name: Build project
@@ -37,7 +37,7 @@ jobs:
           make dev
       - name: Set up Vault server
         run: |
-          docker run -d --rm --net=host \
+          docker run -d --name vault --rm --net=host \
           -e VAULT_DEV_ROOT_TOKEN_ID=root \
           -e VAULT_LOCAL_CONFIG='{"plugin_directory": "${{ github.workspace }}/bin"}' \
           -v "${{ github.workspace }}/bin:${{ github.workspace }}/bin" \
@@ -53,7 +53,7 @@ jobs:
               echo $v >> $GITHUB_ENV
           done
           make setup-env
-      - name: Configure project on Vault server
+      - name: Configure Vault server
         run: |
           export VAULT_ADDR=http://127.0.0.1:8200
           export VAULT_TOKEN=root
@@ -63,6 +63,10 @@ jobs:
         run: |
           source ./bootstrap/terraform/local_environment_setup.sh
           make testacc
+      - name: Capture Vault logs
+        if: always()
+        run: |
+          docker logs vault
       - name: Clean test environment
         if: always()
         run: |
