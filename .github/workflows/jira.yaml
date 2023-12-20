@@ -93,6 +93,7 @@ jobs:
         # customfield_10089 is Issue Link custom field
         # customfield_10091 is team custom field
         extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ steps.preprocess.outputs.teams_array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
+
     - name: Search
       if: github.event.action != 'opened'
       id: search
@@ -100,18 +101,39 @@ jobs:
       with:
         # cf[10089] is Issue Link custom field
         jql: 'project = "VAULT" and cf[10089]="${{ github.event.issue.html_url || github.event.pull_request.html_url }}"'
+
+    - name: Fetch ticket status
+      if: steps.search.outputs.issue
+      id: status
+      run: |
+        status_name=$(curl -s \
+        -u ${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }} \
+        -H "Content-Type: application/json" \
+        -X GET ${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status \
+        | jq -r .fields.status.name)
+        echo "status=${status_name}" >> $GITHUB_OUTPUT
+
     - name: Sync comment
       if: github.event.action == 'created' && steps.search.outputs.issue
       uses: tomhjp/gh-action-jira-comment@6eb6b9ead70221916b6badd118c24535ed220bd9 # v0.2.0
       with:
         issue: ${{ steps.search.outputs.issue }}
         comment: "${{ github.actor }} ${{ github.event.review.state || 'commented' }}:\n\n${{ github.event.comment.body || github.event.review.body }}\n\n${{ github.event.comment.html_url || github.event.review.html_url }}"
+
     - name: Close ticket
       if: (github.event.action == 'closed' || github.event.action == 'deleted') && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
       with:
         issue: ${{ steps.search.outputs.issue }}
         transition: Closed
+
+    - name: Thaw ticket
+      if: github.event_name == 'issue_comment' && steps.status.outputs.status == 'Icebox'
+      uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
+      with:
+        issue: ${{ steps.search.outputs.issue }}
+        transition: Pending Triage
+
     - name: Reopen ticket
       if: github.event.action == 'reopened' && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
