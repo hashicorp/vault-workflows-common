@@ -119,9 +119,9 @@ jobs:
       id: label
       run: |
         OPERATION=""
-        if [ ${{ github.event.action == 'labeled'}} ]; then
+        if [ ${{ github.event.action }} == "labeled" ]; then
           OPERATION="add"
-        elif [ ${{ github.event.action == 'unlabeled'}} ]; then
+        elif [ ${{ github.event.action }} == "unlabeled" ]; then
           OPERATION="remove"
         else
           echo "Action ${{ github.event.action }} unsupported"
