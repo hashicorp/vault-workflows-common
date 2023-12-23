@@ -2,9 +2,26 @@
 
 # name: JIRA Sync
 # on:
-#   issues:
+#   workflow_dispatch: # Optional, allows for import through workflow_dispatch
+#     inputs:
+#       team-labels:
+#         required: true
+#         description: 'Team label to use. Wrapped in [], e.g. ["core"]'
+#         type: string
+#       gh-type:
+#         required: true
+#         type: choice
+#         description: 'Type PR or ISS. Optional unless triggered by workflow_dispatch.'
+#         options:
+#           - PR
+#           - ISS
+#       gh-number:
+#         required: true
+#         description: 'Team label to use. Wrapped in [], e.g. ["core"]'
+#         type: string
+#   issues: # May leave out 'opened' if using workflow_dispatch and skipping auto-sync
 #     types: [opened, closed, deleted, reopened]
-#   pull_request_target:
+#   pull_request_target: # May leave out 'opened' if using workflow_dispatch and skipping auto-sync
 #     types: [opened, closed, reopened]
 #   issue_comment: # Also triggers when commenting on a PR from the conversation view
 #     types: [created]
@@ -19,7 +36,9 @@
 #       JIRA_SYNC_USER_EMAIL: ${{ steps.secrets.outputs.JIRA_SYNC_USER_EMAIL }}
 #       JIRA_SYNC_API_TOKEN: ${{ steps.secrets.outputs.JIRA_SYNC_API_TOKEN }}
 #     with:
-#       teams-array: '["foundations-eco"]'
+#       teams-array: '["foundations-eco"]' # Or ${{ inputs.team-label }}
+#       dispatch-gh-type: ${{ inputs.gh-type }}
+#       dispatch-gh-number: ${{ inputs.gh-number }}
 
 on:
   workflow_call:
@@ -28,6 +47,15 @@ on:
         required: true
         type: string
         description: 'JSON formatted array of teams to create issues with, e.g. ["ecosystem", "foundations"]. Must use double quotes for each element.'
+      dispatch-gh-type:
+        type: choice
+        description: 'Type PR or ISS. Optional unless triggered by workflow_dispatch.'
+        options:
+          - PR
+          - ISS
+      dispatch-gh-number:
+        type: string
+        description: 'GH PR or Issue number. Optional unless triggered by workflow_dispatch.'
     secrets:
       JIRA_SYNC_BASE_URL:
         required: true
@@ -50,13 +78,61 @@ jobs:
         JIRA_USER_EMAIL: ${{ secrets.JIRA_SYNC_USER_EMAIL }}
         JIRA_API_TOKEN: ${{ secrets.JIRA_SYNC_API_TOKEN }}
     - name: Preprocess
-      if: github.event.action == 'opened' || github.event.action == 'created'
+      if: github.event.action == 'opened' || github.event.action == 'created' || github.event_name == 'workflow_dispatch'
       id: preprocess
       run: |
-        if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [ -z "${{ inputs.dispatch-gh-type }}" || -z "${{ inputs.dispatch-gh-number }}"]; then
+            echo "error: workflow_dispatch but GH no type or number provided"
+            exit 1
+          fi
+        
+          echo "type=${{ inputs.dispatch-gh-type }}" >> "$GITHUB_OUTPUT"
+          echo "gh_number=${{ inputs.dispatch-gh-number }}" >> "$GITHUB_OUTPUT"
+        
+          if [[ "${{ inputs.dispatch-gh-type }}" == "PR" ]]; then
+            TITLE=$(gh pr view ${{ inputs.dispatch-gh-number }} --json=title -q .title)
+            echo "gh_title=$TITLE">> "$GITHUB_OUTPUT"
+        
+            BODY=$( gh pr view ${{ inputs.dispatch-gh-number }} --json=body -q .body)
+            echo "gh_body=$BODY" >> "$GITHUB_OUTPUT"
+        
+            URL=$(gh pr view ${{ inputs.dispatch-gh-number }} --json=url -q .url)
+            echo "gh_url=$URL" >> "$GITHUB_OUTPUT"
+        
+            AUTHOR=$(gh pr view ${{ inputs.dispatch-gh-number }} --json=author -q .author.login)
+            echo "gh_author=$AUTHOR" >> "$GITHUB_OUTPUT"
+        
+          elif [[ "${{ inputs.dispatch-gh-type }}" == "ISS" ]];then
+            TITLE=$(gh issue view ${{ inputs.dispatch-gh-number }} --json=title -q .title)
+            echo "gh_title=$TITLE">> "$GITHUB_OUTPUT"
+        
+            BODY=$( gh issue view ${{ inputs.dispatch-gh-number }} --json=body -q .body)
+            echo "gh_body=$BODY" >> "$GITHUB_OUTPUT"
+        
+            URL=$(gh issue view ${{ inputs.dispatch-gh-number }} --json=url -q .url)
+            echo "gh_url=$URL" >> "$GITHUB_OUTPUT"
+        
+            AUTHOR=$(gh issue view ${{ inputs.dispatch-gh-number }} --json=author -q .author.login)
+            echo "gh_author=$AUTHOR" >> "$GITHUB_OUTPUT"
+          else
+            echo "error: invalid GH type"
+            exit 1
+          fi
+        elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
           echo "type=PR" >> "$GITHUB_OUTPUT"
+          echo "gh_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          echo "gh_title=${{ github.event.pull_request.title }}" >> "$GITHUB_OUTPUT"
+          echo "gh_body=${{ github.event.pull_request.body }}" >> "$GITHUB_OUTPUT"
+          echo "gh_url=${{ github.event.pull_request.html_url }}" >> "$GITHUB_OUTPUT"
+          echo "gh_author=${{ github.actor }}" >> "$GITHUB_OUTPUT"
         else
           echo "type=ISS" >> "$GITHUB_OUTPUT"
+          echo "gh_number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          echo "gh_title=${{ github.event.issue.title }}" >> "$GITHUB_OUTPUT"
+          echo "gh_body=${{ github.event.issue.body }}" >> "$GITHUB_OUTPUT"
+          echo "gh_url=${{ github.event.issue.html_url }}" >> "$GITHUB_OUTPUT"
+          echo "gh_author=${{ github.actor }}" >> "$GITHUB_OUTPUT"
         fi
 
         echo "==> Determining team labels"
@@ -80,6 +156,7 @@ jobs:
 
     - name: Create ticket
       if: |
+        github.event_name == 'workflow_dispatch' ||
         github.event.action == 'opened'
         && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
         && (github.actor != 'dependabot[bot]')
@@ -88,14 +165,14 @@ jobs:
       with:
         project: VAULT
         issuetype: "GH Issue"
-        summary: "${{ github.event.repository.name }} [${{ steps.preprocess.outputs.type }} #${{ github.event.issue.number || github.event.pull_request.number }}]: ${{ github.event.issue.title || github.event.pull_request.title }}"
-        description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created from GitHub Action for ${{ github.event.issue.html_url || github.event.pull_request.html_url }} from ${{ github.actor }}_"
+        summary: "${{ github.event.repository.name }} [${{ steps.preprocess.outputs.type }} #${{ steps.preprocess.outputs.gh_number }}]: ${{ steps.preprocess.outputs.gh_title }}"
+        description: "${{ steps.preprocess.outputs.gh_body }}\n\n_Created from GitHub Action for ${{ steps.preprocess.outputs.gh_url }} from ${{ github.actor }}_"
         # customfield_10089 is Issue Link custom field
         # customfield_10091 is team custom field
-        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ steps.preprocess.outputs.teams_array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
+        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ steps.preprocess.outputs.teams_array }}, "customfield_10089": "${{ steps.preprocess.outputs.gh_url }}"}'
 
     - name: Search
-      if: github.event.action != 'opened'
+      if: github.event_name != 'workflow_dispatch' && github.event.action != 'opened'
       id: search
       uses: tomhjp/gh-action-jira-search@04700b457f317c3e341ce90da5a3ff4ce058f2fa # v0.2.2
       with:
@@ -114,28 +191,28 @@ jobs:
         echo "status=${status_name}" >> $GITHUB_OUTPUT
 
     - name: Sync comment
-      if: github.event.action == 'created' && steps.search.outputs.issue
+      if: github.event_name != 'workflow_dispatch' && github.event.action == 'created' && steps.search.outputs.issue
       uses: tomhjp/gh-action-jira-comment@6eb6b9ead70221916b6badd118c24535ed220bd9 # v0.2.0
       with:
         issue: ${{ steps.search.outputs.issue }}
         comment: "${{ github.actor }} ${{ github.event.review.state || 'commented' }}:\n\n${{ github.event.comment.body || github.event.review.body }}\n\n${{ github.event.comment.html_url || github.event.review.html_url }}"
 
     - name: Close ticket
-      if: (github.event.action == 'closed' || github.event.action == 'deleted') && steps.search.outputs.issue
+      if: github.event_name != 'workflow_dispatch' && (github.event.action == 'closed' || github.event.action == 'deleted') && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
       with:
         issue: ${{ steps.search.outputs.issue }}
         transition: Closed
 
     - name: Thaw ticket
-      if: github.event_name == 'issue_comment' && steps.status.outputs.status == 'Icebox'
+      if: github.event_name != 'workflow_dispatch' && github.event_name == 'issue_comment' && steps.status.outputs.status == 'Icebox'
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
       with:
         issue: ${{ steps.search.outputs.issue }}
         transition: Pending Triage
 
     - name: Reopen ticket
-      if: github.event.action == 'reopened' && steps.search.outputs.issue
+      if: github.event_name != 'workflow_dispatch' && github.event.action == 'reopened' && steps.search.outputs.issue
       uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
       with:
         issue: ${{ steps.search.outputs.issue }}
