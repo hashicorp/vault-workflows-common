@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  security-scanner:
+  security-scan:
     runs-on: ubuntu-latest
     env:
       PLUGIN_NAME: ${GITHUB_REPOSITORY#*/}
