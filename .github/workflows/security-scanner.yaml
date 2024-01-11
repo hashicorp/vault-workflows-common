@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  workflow_call:
+
+jobs:
+  security-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan
+        uses: hashicorp/security-scanner@v0.0.2
+        with:
+          repository: "$PWD"
+
+      - name: Check security-scanner results
+        run: |
+          # ensure we have a "runs" key
+          if jq -e 'has("runs")' results.sarif > /dev/null; then
+            # ensure "runs" is non-empty and we have a "results" key
+            if jq -e 'select(.runs != []).runs[] | has("results")' results.sarif > /dev/null; then
+              # ensure "results" is non-empty
+              if jq -e 'select(.runs != []).runs[] | select(.results != [])' results.sarif > /dev/null; then
+                echo "::error::vulnerabilities found, please check logs"
+                exit 1
+              fi
+            fi
+          fi
+
+      - name: Show security-scanner logs
+        if: failure()
+        run: |
+          summary=$(jq -r '.runs[].results[].message.text' results.sarif | sort | uniq)
+          echo "${summary}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
