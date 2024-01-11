@@ -2,6 +2,10 @@ name: Tag Plugin
 
 on:
   workflow_call:
+    tag:
+      type: string
+      description: 'The name of the plugin tag. Ex: v0.5.1'
+      required: true
 
 jobs:
   security-scan:
@@ -56,7 +60,6 @@ jobs:
 
       - name: Cut tag
         run: |
-          echo "::info::git tag"
-          git tag
-          echo "working dir:"
-          pwd
+          git tag "${{ inputs.tag }}"
+          git push origin "${{ inputs.tag }}"
+          git tag -l
