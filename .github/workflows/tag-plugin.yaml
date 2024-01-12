@@ -66,8 +66,8 @@ jobs:
       - name: Show security-scanner logs
         if: failure()
         run: |
-          echo "$summary"
           summary=$(jq -r '.runs[].results[].message.text' results.sarif | sort | uniq)
+          echo "$summary"
           echo "${summary}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
