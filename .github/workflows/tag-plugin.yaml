@@ -1,3 +1,21 @@
+# Use like:
+#
+# name: Tag Plugin
+#
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       tag:
+#         type: string
+#         description: 'The name of the plugin tag. Ex: v0.5.1'
+#         required: true
+#
+# jobs:
+#   tag-plugin:
+#     uses: hashicorp/vault-workflows-common/.github/workflows/tag-plugin.yaml@security-scanner
+#     with:
+#       tag: ${{ inputs.tag }}
+
 name: Tag Plugin
 
 on:
@@ -21,7 +39,7 @@ jobs:
         with:
           go-version-file: './go.mod'
 
-      - name: Build plugin
+      - name: Build plugin $PLUGIN_NAME
         run : |
           go build -o "$PLUGIN_NAME"
 
@@ -48,6 +66,7 @@ jobs:
       - name: Show security-scanner logs
         if: failure()
         run: |
+          echo "$summary"
           summary=$(jq -r '.runs[].results[].message.text' results.sarif | sort | uniq)
           echo "${summary}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
