@@ -13,8 +13,6 @@
 #     secrets:
 #       VAULT_ECO_GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
 #     with:
-#       # either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations
-#       reviewer-team: hashicorp/vault-ecosystem-applications
 #       repository: ${{ github.repository }}
 #       run-id: ${{ github.run_id }}
 
@@ -23,10 +21,6 @@ name: Upgrade dependencies
 on:
   workflow_call:
     inputs:
-      reviewer-team:
-        required: true
-        type: string
-        description: 'Team to review the resulting PR. Either hashicorp/vault-ecosystem-applications or hashicorp/vault-ecosystem-foundations.'
       repository:
         required: true
         type: string
@@ -35,6 +29,14 @@ on:
         required: true
         type: string
         description: 'The workflow run ID as per the github.run_id context property.'
+      skip:
+        description: 'Dependencies to skip separated by whitespace'
+        required: false
+        type: string
+      reviewer-team:
+        required: false
+        type: string
+        description: 'Deprecated; currently unused.'
     secrets:
       VAULT_ECO_GITHUB_TOKEN:
         required: true
@@ -61,8 +63,26 @@ jobs:
 
       - name: Upgrade Go dependencies
         run: |
-          go list -u -m -json all | jq -r 'select(.Indirect != true and .Update != null) | .Path+"@"+.Update.Version' | xargs -L1 go get
+          go list -u -m -json all | jq -r 'select(.Indirect != true and .Update != null) | .Path+"@"+.Update.Version' > deps.txt
+          echo "::debug::Direct dependencies that can be updated:"
+          echo "::debug::$(cat deps.txt)"
+
+          if [[ -n "${{ inputs.skip }}" ]]; then
+            skip="${{ inputs.skip }}"
+            # shellcheck disable=SC2086
+            for dep in $skip; do
+              echo "::notice::will not update $dep"
+              grep -v "$dep" deps.txt > omit_skipped_deps.txt
+            done
+
+            mv -f omit_skipped_deps.txt deps.txt
+            echo "::debug::After removing skipped entires, direct dependencies that will updated:"
+            echo "::debug::$(cat deps.txt)"
+          fi
+
+          xargs -L1 go get < deps.txt
           go mod tidy
+          rm deps.txt
 
       - name: Detect changes
         id: changes
@@ -76,7 +96,7 @@ jobs:
         run: |
           git config user.name hc-github-team-secure-vault-ecosystem
           git config user.email hc-github-team-secure-vault-ecosystem@users.noreply.github.com
-          git add .
+          git add go.mod go.sum
           git commit -m "Automated dependency upgrades"
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
 
@@ -87,45 +107,42 @@ jobs:
             -f repo="${{ inputs.repository }}" \
             -f plugin_branch="$BRANCH_NAME"
 
-      - name: Get go-mod-changelog script
-        id: changelog
-        run: |
-          curl -o go-mod-changelog.py https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/go-mod-changelog.py
-          chmod +x go-mod-changelog.py
-
       - name: Open pull request if needed
         if: steps.changes.outputs.count > 0
-        env:
-          REVIEWER_TEAM: ${{ inputs.reviewer-team }}
-          REPO: ${{ inputs.repository }}
-          RUN_ID: ${{ inputs.run-id }}
         # Only open a PR if the branch is not attached to an existing one
         run: |
           PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
-
-          # currently unable to set team as reviewer in GHA
-          # see https://github.com/cli/cli/issues/6395
-          reviewers=""
-          if [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-applications" ]]; then
-            reviewers="austingebauer,fairclothjm,vinay-gopalan,maxcoulombe,robmonte,Zlaticanin,kpcraig,raymonstah"
-          elif [[ "$REVIEWER_TEAM" == "hashicorp/vault-ecosystem-foundations" ]]; then
-            reviewers="swenson,benashz,tvoran,tomhjp,kschoche,thyton"
-          else
-            echo "Unknown input for reviewer-team"
-            exit 1
-          fi
-
           if [ -z "$PR" ]; then
             gh pr create \
             --head "$BRANCH_NAME" \
             --title "Automated dependency upgrades" \
-            --reviewer "$reviewers" \
-            --label "dependencies" \
+            --label "dependencies"
+          else
+            echo "::notice::Pull request already exists, won't create a new one."
+          fi
+
+      - name: Get go-mod-changelog script
+        id: changelog
+        if: steps.changes.outputs.count > 0
+        run: |
+          curl -o go-mod-changelog.py https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/go-mod-changelog.py
+          chmod +x go-mod-changelog.py
+
+      - name: Update changelog blurb in PR body
+        if: steps.changes.outputs.count > 0
+        env:
+          REPO: ${{ inputs.repository }}
+          RUN_ID: ${{ inputs.run-id }}
+        run: |
+          PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
+
+          if [ -n "$PR" ]; then
+            gh pr update $PR \
             --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
 
             $(./go-mod-changelog.py)
             "
           else
-            echo "Pull request already exists, won't create a new one."
+            echo "::error::Pull request #$PR not found."
           fi
 
