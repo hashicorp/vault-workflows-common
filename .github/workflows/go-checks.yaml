@@ -7,6 +7,8 @@
 #   go-checks:
 #     # using `main` as the ref will keep your workflow up-to-date
 #     uses: hashicorp/vault-workflows-common/.github/workflows/go-checks.yaml@main
+#     secrets:
+#       VAULT_ECO_GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
 
 
 name: Run go checks
@@ -29,6 +31,9 @@ on:
         required: false
         type: string
         default: "vendor,pb.go"
+    secrets:
+      VAULT_ECO_GITHUB_TOKEN:
+        required: false
 
 jobs:
   gomod:
@@ -83,6 +88,7 @@ jobs:
   security-scan:
     name: Security scan
     runs-on: ubuntu-latest
+    if: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }} != ''
     steps:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -99,6 +105,8 @@ jobs:
         # https://github.com/hashicorp/security-scanner/commit/5d11070871dfd8662ad3518f922c885a1df907a7
         # has fail-on-detection which is currently unreleased
         uses: hashicorp/security-scanner@5d11070871dfd8662ad3518f922c885a1df907a7
+        env:
+          GH_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
         with:
           binary: plugin
           fail-on-detection: true
