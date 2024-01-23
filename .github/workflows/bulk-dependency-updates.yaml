@@ -137,7 +137,7 @@ jobs:
           PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
           if [ -n "$PR" ]; then
-            gh pr update $PR \
+            gh pr edit $PR \
             --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
 
             $(./go-mod-changelog.py)
