@@ -88,8 +88,14 @@ jobs:
   security-scan:
     name: Security scan
     runs-on: ubuntu-latest
-    if: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }} != ''
     steps:
+      - name: Check for Secret availability
+        shell: bash
+        run: |
+          if [ "${{ secrets.VAULT_ECO_GITHUB_TOKEN }}" == '' ]; then
+            echo "::notice::unable to fetch security scanner; missing secret input"
+            exit 1
+          fi
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Setup Go
