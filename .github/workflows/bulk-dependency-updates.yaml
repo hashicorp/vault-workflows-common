@@ -116,6 +116,7 @@ jobs:
             gh pr create \
             --head "$BRANCH_NAME" \
             --title "Automated dependency upgrades" \
+            --body "Full log: https://github.com/${{ inputs.repository }}/actions/runs/${{ inputs.run-id }}" \
             --label "dependencies"
           else
             echo "::notice::Pull request already exists, won't create a new one."
@@ -130,15 +131,12 @@ jobs:
 
       - name: Update changelog blurb in PR body
         if: steps.changes.outputs.count > 0
-        env:
-          REPO: ${{ inputs.repository }}
-          RUN_ID: ${{ inputs.run-id }}
         run: |
           PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
           if [ -n "$PR" ]; then
             gh pr edit $PR \
-            --body "Full log: https://github.com/$REPO/actions/runs/$RUN_ID
+            --body "Full log: https://github.com/${{ inputs.repository }}/actions/runs/${{ inputs.run-id }}
 
             $(./go-mod-changelog.py)
             "
