@@ -88,6 +88,8 @@ jobs:
   security-scan:
     name: Security scan
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
     steps:
       - name: Check for Secret availability
         shell: bash
@@ -111,8 +113,6 @@ jobs:
         # https://github.com/hashicorp/security-scanner/commit/5d11070871dfd8662ad3518f922c885a1df907a7
         # has fail-on-detection which is currently unreleased
         uses: hashicorp/security-scanner@5d11070871dfd8662ad3518f922c885a1df907a7
-        env:
-          GH_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
         with:
           binary: plugin
           fail-on-detection: true
