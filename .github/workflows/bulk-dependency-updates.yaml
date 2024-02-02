@@ -33,6 +33,11 @@ on:
         description: 'Dependencies to skip separated by whitespace'
         required: false
         type: string
+      skip_dispatch_vault_ci:
+        description: 'Skip creating the Vault CI check PR.'
+        required: false
+        default: false
+        type: boolean
       reviewer-team:
         required: false
         type: string
@@ -101,7 +106,7 @@ jobs:
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
 
       - name: Dispatch to vault
-        if: steps.changes.outputs.count > 0
+        if: ${{ steps.changes.outputs.count > 0 && inputs.skip_dispatch_vault_ci == false }}
         run: |
           gh workflow run --repo hashicorp/vault plugin-update-check.yml \
             -f repo="${{ inputs.repository }}" \
@@ -135,7 +140,7 @@ jobs:
           PR=$(gh pr list --head "$BRANCH_NAME" --json number -q '.[0].number')
 
           if [ -n "$PR" ]; then
-            gh pr edit $PR \
+            gh pr edit "$PR" \
             --body "Full log: https://github.com/${{ inputs.repository }}/actions/runs/${{ inputs.run-id }}
 
             $(./go-mod-changelog.py)
