@@ -33,7 +33,7 @@ on:
         description: 'Dependencies to skip separated by whitespace'
         required: false
         type: string
-      skip_dispatch_vault_ci:
+      skip-dispatch-vault-ci:
         description: 'Skip creating the Vault CI check PR.'
         required: false
         default: false
@@ -106,7 +106,7 @@ jobs:
           git push -f origin ${{ github.ref_name }}:"$BRANCH_NAME"
 
       - name: Dispatch to vault
-        if: ${{ steps.changes.outputs.count > 0 && inputs.skip_dispatch_vault_ci == false }}
+        if: ${{ steps.changes.outputs.count > 0 && inputs.skip-dispatch-vault-ci == false }}
         run: |
           gh workflow run --repo hashicorp/vault plugin-update-check.yml \
             -f repo="${{ inputs.repository }}" \
