@@ -3,9 +3,9 @@
 # name: JIRA Sync
 # on:
 #   issues:
-#     types: [opened, closed, deleted, reopened]
+#     types: [opened, closed, deleted, reopened, labeled, unlabeled]
 #   pull_request_target:
-#     types: [opened, closed, reopened]
+#     types: [opened, closed, reopened, labeled, unlabeled]
 #   issue_comment: # Also triggers when commenting on a PR from the conversation view
 #     types: [created]
 # jobs:
@@ -107,11 +107,47 @@ jobs:
       id: status
       run: |
         status_name=$(curl -s \
-        -u ${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }} \
-        -H "Content-Type: application/json" \
-        -X GET ${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status \
-        | jq -r .fields.status.name)
+          -X GET
+          --url '${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status' \
+          -u '${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}' \
+          -H 'Content-Type: application/json' \
+          | jq -r .fields.status.name)
         echo "status=${status_name}" >> $GITHUB_OUTPUT
+
+    - name: Manage labels
+      if: (github.event.action == 'labeled' || github.event.action == 'unlabeled' ) && steps.search.outputs.issue
+      id: label
+      run: |
+        OPERATION=""
+        if [ ${{ github.event.action }} == "labeled" ]; then
+          OPERATION="add"
+        elif [ ${{ github.event.action }} == "unlabeled" ]; then
+          OPERATION="remove"
+        else
+          echo "Action ${{ github.event.action }} unsupported"
+          exit 1
+        fi
+        
+        STATUS_CODE=$(curl -s -w %{http_code} \
+          -X PUT \
+          --url 'https://hashicorp.atlassian.net/rest/api/3/issue/VAULT-22859' \
+          -u '${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}' \
+          -H 'Accept: application/json' \
+          -H 'Content-Type: application/json' \
+          -d "{
+          \"update\": {
+            \"labels\": [
+              {
+                \"${OPERATION}\": \"${{ github.event.label.name }}\"
+              }
+            ]
+          }
+        }")
+        
+        if [ $STATUS_CODE != 204 ]; then
+          echo "Expected 204 status code, received: $STATUS_CODE"
+          exit 1
+        fi
 
     - name: Sync comment
       if: github.event.action == 'created' && steps.search.outputs.issue
