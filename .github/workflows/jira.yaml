@@ -130,13 +130,13 @@ jobs:
       id: transitions
       if: steps.search.outputs.issue
       run: |
-        if [[ ("${{ github.event.action }}" == "closed" || "${{ github.event.action }}" == "deleted") && -n "${{ steps.search.outputs.issue }}" ]]; then
+        if [[ "${{ github.event.action }}" == "closed" || "${{ github.event.action }}" == "deleted" ]]; then
           echo "Closing ticket"
           echo "name=Closed" >> $GITHUB_OUTPUT
         elif [[ "${{ github.event_name }}" == "issue_comment" && "${{ steps.status.outputs.status }}" == "Icebox" ]]; then
           echo "Thawing ticket"
           echo "name=Pending Triage" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.event.action }}" == "reopened" && -n "${{ steps.search.outputs.issue }}" ]]; then
+        elif [[ "${{ github.event.action }}" == "reopened" ]]; then
           echo "Reopening ticket"
           echo "name=Reopen" >> $GITHUB_OUTPUT
         fi
