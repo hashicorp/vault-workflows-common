@@ -108,11 +108,11 @@ jobs:
       if: steps.search.outputs.issue
       id: status
       run: |
-        status_name=$(curl -s \
-        -u ${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }} \
-        -H "Content-Type: application/json" \
-        -X GET ${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status \
-        | jq -r .fields.status.name)
+        status_name="$(curl --silent \
+          --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status" \
+          --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}"" \
+          --header "Content-Type: application/json" \
+        | jq -r .fields.status.name)"
         echo "status=${status_name}" >> $GITHUB_OUTPUT
 
     - name: Sync comment
@@ -146,14 +146,14 @@ jobs:
       if: steps.transitions.outputs.name
       run: |
         transitions="$(curl --silent \
-          --url '${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions' \
-          --user '${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}' \
-          --header 'Accept: application/json')"
+          --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
+          --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
+          --header "Accept: application/json")"
         id="$(echo "${transitions}" | jq -r '.transitions[] | select(.name == "${{ steps.transitions.outputs.name }}") | .id')"
 
         curl --silent \
-          --url '${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions' \
-          --user '${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}' \
-          --header 'Accept: application/json' \
-          --header 'Content-Type: application/json' \
+          --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
+          --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
+          --header "Accept: application/json" \
+          --header "Content-Type: application/json" \
           --data "$(printf '{"transition": {"id": "%s"}}' "${id}")"
