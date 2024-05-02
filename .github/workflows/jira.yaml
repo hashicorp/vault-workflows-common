@@ -110,7 +110,7 @@ jobs:
       run: |
         status_name="$(curl --silent \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status" \
-          --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}"" \
+          --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Content-Type: application/json" \
         | jq -r .fields.status.name)"
         echo "status=${status_name}" >> $GITHUB_OUTPUT
