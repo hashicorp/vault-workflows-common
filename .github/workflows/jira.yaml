@@ -151,7 +151,7 @@ jobs:
           --header "Accept: application/json")"
         id="$(echo "${transitions}" | jq -r '.transitions[] | select(.name == "${{ steps.transitions.outputs.name }}") | .id')"
 
-        curl --silent \
+        curl --show-error \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
           --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Accept: application/json" \
