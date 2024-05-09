@@ -78,7 +78,7 @@ jobs:
         && !(github.event.pull_request && contains(github.event.pull_request.labels.*.name, 'dependencies'))
         && (github.actor != 'dependabot[bot]')
         && !startsWith(github.head_ref, 'VAULT-' ) && !startsWith(github.head_ref, 'vault-' )
-      uses: hashicorp/gh-action-jira-create@replace-tomhjp-dep
+      uses: hashicorp/gh-action-jira-create@84c84ad564106f548729912dbda38d66ef117bb7 # v0.3.0
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_SYNC_BASE_URL }}
         JIRA_USER_EMAIL: ${{ secrets.JIRA_SYNC_USER_EMAIL }}
@@ -95,7 +95,7 @@ jobs:
     - name: Search
       if: github.event.action != 'opened'
       id: search
-      uses: hashicorp/gh-action-jira-search@replace-tomhjp-dep
+      uses: hashicorp/gh-action-jira-search@2b531eaa4b2380fa268fbe94b80bc92109c92d5d # v0.3.0
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_SYNC_BASE_URL }}
         JIRA_USER_EMAIL: ${{ secrets.JIRA_SYNC_USER_EMAIL }}
@@ -117,7 +117,7 @@ jobs:
 
     - name: Sync comment
       if: github.event.action == 'created' && steps.search.outputs.issue
-      uses: hashicorp/gh-action-jira-comment@replace-tomhjp-dep
+      uses: hashicorp/gh-action-jira-comment@9e4a11098f8bd0d12745708d4d4b63c5a81df2fc # v0.3.0
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_SYNC_BASE_URL }}
         JIRA_USER_EMAIL: ${{ secrets.JIRA_SYNC_USER_EMAIL }}
