@@ -53,25 +53,6 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
-        echo "==> Determining team labels"
-        teams_field='[]'
-        for team in $(echo '${{ inputs.teams-array }}' | jq -r '.[]'); do
-          if [[ "$team" == "applications" ]] || [[ "$team" == "foundations" ]]; then
-            t="${team}-eco"
-            echo "==> Found deprecated team label \"$team\", overwriting with \"$t\""
-            # append team label to array
-            teams_field="$(echo "$teams_field" | jq --compact-output --arg tt "$t" '. |= . + [$tt]')"
-          fi
-        done
-
-        if [[ $(echo "${teams_field}" | jq 'length') == 0 ]]; then
-          echo "==> No deprecated fields were overwritten, let labels passthrough"
-          teams_field='${{ inputs.teams-array }}'
-        fi
-
-        echo "==> Using labels: $teams_field"
-        echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
-
     - name: Create ticket
       if: |
         github.event.action == 'opened'
@@ -90,7 +71,7 @@ jobs:
         description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created from GitHub Action for ${{ github.event.issue.html_url || github.event.pull_request.html_url }} from ${{ github.actor }}_"
         # customfield_10089 is Issue Link custom field
         # customfield_10091 is team custom field
-        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ steps.preprocess.outputs.teams_array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
+        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ inputs.teams-array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
 
     - name: Search
       if: github.event.action != 'opened'
@@ -108,7 +89,7 @@ jobs:
       if: steps.search.outputs.issue
       id: status
       run: |
-        status_name="$(curl --silent \
+        status_name="$(curl --show-error --fail --silent \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}?fields=status" \
           --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Content-Type: application/json" \
@@ -145,13 +126,13 @@ jobs:
     - name: Transition ticket
       if: steps.transitions.outputs.name
       run: |
-        transitions="$(curl --silent \
+        transitions="$(curl --show-error --fail --silent \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
           --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Accept: application/json")"
         id="$(echo "${transitions}" | jq -r '.transitions[] | select(.name == "${{ steps.transitions.outputs.name }}") | .id')"
 
-        curl --show-error \
+        curl --show-error --fail --silent \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
           --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Accept: application/json" \
