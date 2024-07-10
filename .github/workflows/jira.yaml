@@ -57,12 +57,15 @@ jobs:
         curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/jira-teams-label/repo-teams.txt
 
         echo "::debug::Determining team labels"
-        team_override="$(grep ${{ github.event.repository.name }} repo-teams.txt | awk '{print $2}')"
+        org_with_repo=${{ github.event.repository.name }}
+        repo="${org_with_repo#hashicorp/}"
+        teams_field="$(grep --max-count 1 $repo repo-teams.txt | awk '{print $2}')"
 
-        if [[ -z "$team_override" ]]; then
+        if [[ -z "$teams_field" ]]; then
           echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
           teams_field='${{ inputs.teams-array }}'
         fi
+
         echo "::notice::Using Team Jira label: $teams_field"
         echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
 
