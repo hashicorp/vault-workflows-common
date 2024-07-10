@@ -53,6 +53,9 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
+        # curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
+        curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/jira-teams-label/repo-teams.txt
+
         echo "::debug::Determining team labels"
         team_override="$(grep ${{ github.event.repository.name }} repo-teams.txt | awk '{print $2}')"
 
