@@ -53,6 +53,16 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
+        echo "::debug::Determining team labels"
+        team_override="$(grep ${{ github.event.repository.name }} repo-teams.txt | awk '{print $2}')"
+
+        if [[ -z "$team_override" ]]; then
+          echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
+          teams_field='${{ inputs.teams-array }}'
+        fi
+        echo "::notice::Using Team Jira label: $teams_field"
+        echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
+
     - name: Create ticket
       if: |
         github.event.action == 'opened'
