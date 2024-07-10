@@ -53,6 +53,23 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
+        curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
+
+        echo "::debug::Determining team labels"
+        org_with_repo=${{ github.event.repository.name }}
+        repo="${org_with_repo#hashicorp/}"
+        label="$(grep --max-count 1 $repo repo-teams.txt | awk '{print $2}')"
+        # append team label to array
+        teams_field="[\"$label\"]"
+
+        if [[ -z "$teams_field" ]]; then
+          echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
+          teams_field='${{ inputs.teams-array }}'
+        fi
+
+        echo "::notice::Using Team Jira label: $teams_field"
+        echo "teams_array=${teams_field}" >> "$GITHUB_OUTPUT"
+
     - name: Create ticket
       if: |
         github.event.action == 'opened'
@@ -71,7 +88,7 @@ jobs:
         description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created from GitHub Action for ${{ github.event.issue.html_url || github.event.pull_request.html_url }} from ${{ github.actor }}_"
         # customfield_10089 is Issue Link custom field
         # customfield_10091 is team custom field
-        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ inputs.teams-array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
+        extraFields: '{"fixVersions": [{"name": "TBD"}], "customfield_10091": ${{ steps.preprocess.outputs.teams_array }}, "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}"}'
 
     - name: Search
       if: github.event.action != 'opened'
