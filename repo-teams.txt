@@ -20,7 +20,6 @@ vault-plugin-secrets-azure               vault-eco
 vault-plugin-secrets-gcp                 vault-eco
 vault-plugin-secrets-gcpkms              vault-eco
 vault-plugin-secrets-kubernetes          vault-eco
-vault-plugin-secrets-kv                  core
 vault-plugin-secrets-mongodbatlas        vault-eco
 vault-plugin-secrets-openldap            vault-eco
 vault-plugin-secrets-terraform           vault-eco
