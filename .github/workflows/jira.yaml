@@ -53,8 +53,8 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
-        # curl -os repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
-        curl -os repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
+        # curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
+        curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/jira-teams-label/repo-teams.txt
 
         echo "::debug::Determining team labels"
         org_with_repo=${{ github.event.repository.name }}
