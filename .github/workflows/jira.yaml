@@ -61,7 +61,8 @@ jobs:
         repo="${org_with_repo#hashicorp/}"
         label="$(grep --max-count 1 $repo repo-teams.txt | awk '{print $2}')"
         # append team label to array
-        teams_field="$(echo "$label" | jq --compact-output --arg tt "$t" '. |= . + [$tt]')"
+        teams_field='[]'
+        teams_field="$(echo "$teams_field" | jq --compact-output --arg tt "$label" '. |= . + [$tt]')"
 
         if [[ -z "$teams_field" ]]; then
           echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
