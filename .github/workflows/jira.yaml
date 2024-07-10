@@ -53,13 +53,15 @@ jobs:
           echo "type=ISS" >> "$GITHUB_OUTPUT"
         fi
 
-        # curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
-        curl -o repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/jira-teams-label/repo-teams.txt
+        # curl -os repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
+        curl -os repo-teams.txt https://raw.githubusercontent.com/hashicorp/vault-workflows-common/main/repo-teams.txt
 
         echo "::debug::Determining team labels"
         org_with_repo=${{ github.event.repository.name }}
         repo="${org_with_repo#hashicorp/}"
-        teams_field="$(grep --max-count 1 $repo repo-teams.txt | awk '{print $2}')"
+        label="$(grep --max-count 1 $repo repo-teams.txt | awk '{print $2}')"
+        # append team label to array
+        teams_field="$(echo "$label" | jq --compact-output --arg tt "$t" '. |= . + [$tt]')"
 
         if [[ -z "$teams_field" ]]; then
           echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
