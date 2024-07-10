@@ -24,3 +24,4 @@ vault-plugin-secrets-kv                  core
 vault-plugin-secrets-mongodbatlas        vault-eco
 vault-plugin-secrets-openldap            vault-eco
 vault-plugin-secrets-terraform           vault-eco
+vault-plugin-vaulteco-testing           vault-eco
