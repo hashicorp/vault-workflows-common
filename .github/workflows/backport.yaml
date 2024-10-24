@@ -11,11 +11,17 @@
 #   backport:
 #     # using `main` as the ref will keep your workflow up-to-date
 #     uses: hashicorp/vault-workflows-common/.github/workflows/backport.yaml@main
+#     secrets:
+#       VAULT_ECO_GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
 
 name: Run backport assistant
 
 on:
-  workflow_call: {}
+  workflow_call:
+    secrets:
+      VAULT_ECO_GITHUB_TOKEN:
+        required: true
+        description: 'Should be different than the default GITHUB_TOKEN so that this workflow can merge commits into the backport branch.'
 
 jobs:
   backport:
