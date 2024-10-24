@@ -20,11 +20,15 @@ on:
 jobs:
   backport:
     runs-on: ubuntu-latest
-    container: hashicorpdev/backport-assistant:0.2.2
+    container: hashicorpdev/backport-assistant:0.4.3
     steps:
-      - name: Run Backport Assistant for release branches
-        run: backport-assistant backport
+      - name: Configure git with a token that has sufficient privileges
+        run: |
+          git config --global url."https://${{ secrets.VAULT_ECO_GITHUB_TOKEN }}@github.com".insteadOf https://github.com
+      - name: Backport changes to targeted release branch
+        run: backport-assistant backport -merge-method=squash -gh-automerge
         env:
           BACKPORT_LABEL_REGEXP: "backport/vault-(?P<target>\\d+\\.\\d+\\.\\w+)"
           BACKPORT_TARGET_TEMPLATE: "release/vault-{{.target}}"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BACKPORT_MERGE_COMMIT: true
+          GITHUB_TOKEN: ${{ secrets.VAULT_ECO_GITHUB_TOKEN }}
