@@ -62,7 +62,7 @@ jobs:
         # append team label to array
         teams_field="[\"$label\"]"
 
-        if [[ -z "$teams_field" ]]; then
+        if [[ -z "$label" ]]; then
           echo "::debug::No mapping found in repo-teams.txt, letting labels pass through"
           teams_field='${{ inputs.teams-array }}'
         fi
