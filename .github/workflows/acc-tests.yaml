@@ -16,14 +16,18 @@ on:
 
 jobs:
   run-acc-tests:
+    env:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_TOKEN: root
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         image:
-          - "hashicorp/vault:1.13"
-          - "hashicorp/vault:1.14"
-          - "hashicorp/vault:1.15"
+          - "hashicorp/vault:1.16"
+          - "hashicorp/vault:1.17"
+          - "hashicorp/vault:1.18"
+          - "hashicorp/vault:1.19"
           - "hashicorp/vault:latest"
     steps:
       - name: Checkout repo
@@ -31,7 +35,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version-file: './go.mod'
+          go-version-file: '.go-version'
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -46,12 +50,41 @@ jobs:
           -e VAULT_DEV_ROOT_TOKEN_ID=root \
           -e VAULT_LOCAL_CONFIG='{"plugin_directory": "${{ github.workspace }}/bin"}' \
           -v "${{ github.workspace }}/bin:${{ github.workspace }}/bin" \
-          ${{ matrix.image }} &
-      - name: Set up Vault CLI
+          ${{ matrix.image }}
+      - name: Write Vault wrapper script
         run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt install vault
+          mkdir -p ./build/bin
+          cat <<EOF > ./build/bin/vault
+          #!/bin/bash
+          set -e -o pipefail
+
+          CONTAINER="\${CONTAINER:-vault}"
+          VAULT_TOKEN="\${VAULT_TOKEN:-root}"
+          VAULT_ADDR="\${VAULT_ADDR:-http://localhost:8200}"
+          docker exec -i --env VAULT_ADDR="\$VAULT_ADDR" --env VAULT_TOKEN="\$VAULT_TOKEN" "\${CONTAINER}" /bin/vault "\$@"
+          EOF
+
+          chmod +x ./build/bin/vault
+      - name: Extend PATH
+        run: |
+          echo "${{ github.workspace }}/build/bin" >> $GITHUB_PATH
+      - name: Wait Vault ready
+        run: |
+          count=0
+          isup=0
+          until [ "$count" -ge 10 ]; do
+            if vault status 2>/dev/null; then
+              isup=1
+              break
+            fi
+            count=$((count + 1))
+            echo "Waiting for Vault to be ready..."
+            sleep 2
+          done
+          if [ "$isup" -ne 1 ]; then
+            echo "Vault is not ready after 10 attempts"
+            exit 1
+          fi
       - name: Set up test environment
         run: |
           for v in $(echo '${{ toJson(secrets) }}' | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]'); do
@@ -60,13 +93,17 @@ jobs:
           make setup-env
       - name: Configure Vault server
         run: |
-          export VAULT_ADDR=http://127.0.0.1:8200
-          export VAULT_TOKEN=root
-          source ./bootstrap/terraform/local_environment_setup.sh
+          env_file="${{ github.workspace }}/bootstrap/terraform/local_environment_setup.sh"
+          if [ -f "$env_file" ]; then
+            . "$env_file"
+          fi
           make configure PLUGIN_DIR="${{ github.workspace }}/bin"
       - name: Run acceptance tests
         run: |
-          source ./bootstrap/terraform/local_environment_setup.sh
+          env_file="${{ github.workspace }}/bootstrap/terraform/local_environment_setup.sh"
+          if [ -f "$env_file" ]; then
+            . "$env_file"
+          fi
           make testacc
       - name: Capture Vault logs
         if: always()
