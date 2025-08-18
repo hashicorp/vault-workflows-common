@@ -13,6 +13,12 @@ name: Tests
 
 on:
   workflow_call:
+    inputs:
+      build_tags:
+        description: BUILD_TAGS to pass to the make targets
+        required: false
+        type: string
+        default: ""
     secrets:
       gh_token:
         required: false
@@ -37,8 +43,8 @@ jobs:
         run: |
           git config --global url."https://${{ env.GH_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - name: Run Tests
-        run: make test
+        run: BUILD_TAGS=${{ inputs.build_tags }} make test
 
       - name: Run Test Build
-        run: make dev
+        run: BUILD_TAGS=${{ inputs.build_tags }} make dev
 
