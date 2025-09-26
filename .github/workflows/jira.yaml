@@ -93,7 +93,7 @@ jobs:
     - name: Search
       if: github.event.action != 'opened'
       id: search
-      uses: hashicorp/gh-action-jira-search@2b531eaa4b2380fa268fbe94b80bc92109c92d5d # v0.3.0
+      uses: hashicorp/gh-action-jira-search@96aebbb9218932983bfbe6984e4c1e3ec3bf710e # v0.3.1
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_SYNC_BASE_URL }}
         JIRA_USER_EMAIL: ${{ secrets.JIRA_SYNC_USER_EMAIL }}
