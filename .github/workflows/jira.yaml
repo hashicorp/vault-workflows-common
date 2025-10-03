@@ -149,9 +149,15 @@ jobs:
           --header "Accept: application/json")"
         id="$(echo "${transitions}" | jq -r '.transitions[] | select(.name == "${{ steps.transitions.outputs.name }}") | .id')"
 
+        payload="$(printf '{"transition": {"id": "%s"}}' "${id}")"
+        # closing a card requires a resolution
+        if [[ "${{ steps.transitions.outputs.name }}" == "Closed" ]]; then
+          payload="$(printf '{"fields": {"resolution": {"name": "Done"}}, "transition": {"id": "%s"}}' "${id}")"
+        fi
+
         curl --show-error --fail --silent \
           --url "${{ secrets.JIRA_SYNC_BASE_URL }}rest/api/3/issue/${{ steps.search.outputs.issue }}/transitions" \
           --user "${{ secrets.JIRA_SYNC_USER_EMAIL }}:${{ secrets.JIRA_SYNC_API_TOKEN }}" \
           --header "Accept: application/json" \
           --header "Content-Type: application/json" \
-          --data "$(printf '{"transition": {"id": "%s"}}' "${id}")"
+          --data "${payload}"
